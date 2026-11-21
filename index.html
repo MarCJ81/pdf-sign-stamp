@@ -9,7 +9,7 @@
 <link rel="canonical" href="https://marcj81.github.io/pdf-sign-stamp/">
 <meta name="robots" content="index, follow">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#c2352b">
+<meta name="theme-color" content="#FAFAFA">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PDF 서명·직인 스튜디오">
 <meta property="og:title" content="PDF 서명·직인 스튜디오 — 계약서 도장·서명 1분, 서버 전송 0">
@@ -99,7 +99,6 @@
     <span class="badge badge-free">모두싸인·Acrobat 대비 월 0원</span>
     <span class="badge badge-net" id="net-badge" title="이 페이지가 불러온 외부 도메인 요청 수">외부 요청 0건</span>
   </div>
-
   <div class="top-actions">
     <button class="icon-btn" id="btn-theme" title="라이트/다크 전환" aria-label="테마 전환">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
@@ -328,14 +327,15 @@
 
         <div class="empty" id="empty-state">
           <div class="empty-card">
-            <span class="empty-eyebrow">로컬 전용 · 서버 전송 0건</span>
-            <h1>계약서에 도장 하나 찍자고<br>월 구독료 내지 마세요</h1>
+            <span class="empty-eyebrow"><i class="dot"></i><b>LOCAL</b> 서버 전송 0건 · 가입 없음</span>
+            <h1>계약서에 도장 하나 찍자고<br><em>월 구독료 내지 마세요</em></h1>
             <p class="empty-lede">
               손서명 · 투명 직인 · 날짜·체크를 PDF에 바로 찍고, 용역계약서·NDA·거래명세서까지 1분에 완성합니다.
               모든 처리는 지금 쓰는 브라우저 메모리에서만 일어나고, 파일은 어디로도 전송되지 않습니다.
             </p>
             <label class="dropzone dropzone-hero" id="hero-drop" data-drop>
               <input type="file" id="hero-file" accept="application/pdf,.pdf">
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 16V4m0 0 4 4m-4-4L8 8M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <strong>PDF 파일 열기</strong>
               <small>끌어다 놓거나 눌러서 선택 · 형식 제한 없음</small>
             </label>
@@ -349,6 +349,11 @@
               <button class="sample" id="btn-hero-quote" data-sample="quote">
                 <b>샘플 견적서</b><span>유효기간 포함</span>
               </button>
+            </div>
+            <div class="empty-stats">
+              <div class="empty-stat"><b>0<small>원</small></b><span>월 구독료</span></div>
+              <div class="empty-stat"><b>0<small>건</small></b><span>파일 전송</span></div>
+              <div class="empty-stat"><b>5<small>종</small></b><span>기본 양식</span></div>
             </div>
             <ul class="empty-points">
               <li><b>서명 패드</b> — 마우스·펜·손가락 그대로, 저장해서 재사용</li>
@@ -461,6 +466,7 @@
 <!-- ================= supporting content ================= -->
 <section class="info">
   <div class="info-inner">
+    <span class="info-eyebrow"><b>WHY LOCAL</b> A4 원본 유지 · 워터마크 0 · 서버 전송 0</span>
     <h2>왜 ‘로컬 서명’이 더 싸고 안전한가</h2>
     <p class="info-lede">도장·서명 하나 찍는 일에 매달 구독료를 내고, 민감한 계약서를 남의 서버에 올리던 방식을 그대로 두지 마세요.</p>
     <div class="compare" role="table" aria-label="비교표">
