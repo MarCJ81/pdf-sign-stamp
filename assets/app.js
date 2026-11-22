@@ -1552,10 +1552,20 @@
   }
 
   function bindFiles() {
+    var NOT_PDF = 'PDF 파일(.pdf)만 업로드할 수 있습니다.';
+    var isPdf = function (file) {
+      return !!file && (/pdf$/i.test(file.name) || file.type === 'application/pdf');
+    };
+    var hasFiles = function (ev) {
+      var dt = ev.dataTransfer;
+      if (!dt) return false;
+      if (dt.types && Array.prototype.indexOf.call(dt.types, 'Files') !== -1) return true;
+      return !!(dt.files && dt.files.length);
+    };
     var handleFile = function (file) {
       if (!file) return;
-      if (!/pdf$/i.test(file.name) && file.type !== 'application/pdf') {
-        toast('PDF 파일만 열 수 있습니다', true);
+      if (!isPdf(file)) {
+        toast(NOT_PDF, true);
         return;
       }
       var reader = new FileReader();
@@ -1573,18 +1583,38 @@
         handleFile(file);
       });
     });
-    $$('[data-drop], #stage').forEach(function (zone) {
+    var dropHandled = false;
+    $$('.dropzone, [data-drop], #stage').forEach(function (zone) {
       zone.addEventListener('dragover', function (ev) {
+        if (!hasFiles(ev)) return;
         ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'copy';
         zone.classList.add('is-over');
       });
       zone.addEventListener('dragleave', function () { zone.classList.remove('is-over'); });
       zone.addEventListener('drop', function (ev) {
+        if (!hasFiles(ev)) return;
         ev.preventDefault();
+        ev.stopPropagation();
+        dropHandled = true;
         zone.classList.remove('is-over');
-        var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+        var file = ev.dataTransfer.files && ev.dataTransfer.files[0];
         handleFile(file);
       });
+    });
+    /* 드롭존 바깥에 떨어뜨려도 브라우저가 파일을 열어 버리지 않게 막고, 같은 안내를 준다. */
+    document.addEventListener('dragover', function (ev) {
+      if (hasFiles(ev)) ev.preventDefault();
+    });
+    document.addEventListener('drop', function (ev) {
+      if (!hasFiles(ev)) return;
+      ev.preventDefault();
+      if (dropHandled) { dropHandled = false; return; }
+      var file = ev.dataTransfer.files && ev.dataTransfer.files[0];
+      handleFile(file);
+    });
+    document.addEventListener('dragend', function () {
+      $$('.dropzone').forEach(function (z) { z.classList.remove('is-over'); });
     });
     var openSample = function (kind) {
       setBusy(true);

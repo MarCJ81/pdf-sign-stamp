@@ -64,14 +64,14 @@ assets/vendor/fontkit.umd.min.js      글꼴 임베딩
 assets/vendor/pdf.min.js + pdf.worker.min.js   PDF 렌더링
 assets/vendor/cmaps/, standard_fonts/  한국어 CID PDF·표준 글꼴 대비
 test.js                     engine.js 단위 테스트 45개 (node)
-uitest.py                   실제 Chrome 검증 103개 (데스크톱 1440×900 · 모바일 390×844)
+uitest.py                   실제 Chrome 검증 112개 (데스크톱 1440×900 · 모바일 390×844)
 ```
 
 ## 검증
 
 ```bash
 node test.js          # 45 engine tests
-python3 uitest.py     # 103 browser checks + 실제 PDF 파일 검증 + preview-*.png 캡처
+python3 uitest.py     # 112 browser checks + 실제 PDF 파일 검증 + preview-*.png 캡처
 ```
 
 `uitest.py`는 폴더를 HTTP로 띄우고 headless Chrome(`--no-sandbox`, 기동 재시도)을
@@ -96,6 +96,7 @@ python3 uitest.py     # 103 browser checks + 실제 PDF 파일 검증 + preview-
   Noto Sans KR을 한 번만 임베드(`subset:false`)합니다. 결과 PDF는 약 0.9MB가 늘지만
   본문·스탬프가 벡터 텍스트로 남아 인쇄 품질과 복사·검색이 유지됩니다.
   순수 ASCII 스탬프만 있을 때는 Helvetica를 써서 글꼴을 심지 않습니다.
+- **잘못된 파일 안내**: PDF가 아닌 파일(.txt·이미지)을 파일 선택기나 끌어다 놓기로 넣으면 조용히 무시하지 않고 `PDF 파일(.pdf)만 업로드할 수 있습니다.` 경고를 띄우고 열려 있던 문서는 그대로 둡니다. 드롭존 밖에 떨어뜨려도 같은 안내가 나옵니다.
 - **미리보기 = 결과물**: 문서는 항상 pdf.js로 렌더링한 실제 PDF 위에 요소를 얹어 보여 주므로,
   화면에서 본 위치·크기가 그대로 파일에 들어갑니다(테스트가 ±4pt로 검증).
 - **한글 금액**: 계약서·명세서에 `일금 일천이백만 원정` 표기를 자동 생성합니다(`amountInKorean`).
