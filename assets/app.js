@@ -677,9 +677,76 @@
 
   function padCanvas() { return $('#sig-canvas'); }
 
+  /* signature_pad(MIT) — 곡선·필압 기반의 부드러운 손글씨. 없으면 기존 패드로 동작한다. */
+  var sigPad = null;
+
+  function signaturePadAvailable() {
+    return typeof window.SignaturePad === 'function';
+  }
+
+  function strokesFromPad(data) {
+    return (data || []).map(function (g) {
+      var pts = (g.points || []).map(function (p) { return { x: p.x, y: p.y }; });
+      var w = typeof g.maxWidth === 'number' ? (g.minWidth + g.maxWidth) / 2 : state.pad.width;
+      return { points: pts, color: g.penColor || g.color || state.pad.color, width: Math.max(1, Math.min(6, w || 2.6)) };
+    });
+  }
+
+  function updatePadHint() {
+    var wrap = padCanvas() && padCanvas().closest('.pad-wrap');
+    if (wrap) wrap.classList.toggle('has-ink', state.pad.strokes.length > 0);
+    var ph = $('#sig-placeholder');
+    if (ph) ph.hidden = state.pad.strokes.length > 0;
+  }
+
+  /** 화면 크기에 맞춰 signature_pad 를 새로 붙인다(색·굵기 변경, 시트 열기). */
+  function mountSignaturePad() {
+    var canvas = padCanvas();
+    if (!canvas || !signaturePadAvailable()) return null;
+    var rect = canvas.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return null; // 숨겨진 상태에서는 붙이지 않는다
+    canvas.width = Math.max(1, Math.round(rect.width));
+    canvas.height = Math.max(1, Math.round(rect.height));
+    sigPad = new window.SignaturePad(canvas, {
+      backgroundColor: 'rgba(0,0,0,0)',
+      penColor: state.pad.color,
+      minWidth: Math.max(0.6, state.pad.width * 0.55),
+      maxWidth: Math.max(1, state.pad.width * 1.3),
+      dotSize: function () { return Math.max(1, state.pad.width * 0.9); },
+      throttle: 8,
+      minDistance: 0.9,
+      velocityFilterWeight: 0.7
+    });
+    sigPad.addEventListener('endStroke', function () {
+      state.pad.strokes = strokesFromPad(sigPad.toData());
+      updatePadHint();
+    });
+    window.__sigPad = sigPad; // 브라우저 검증용 핸들(키·문서 데이터 없음)
+    return sigPad;
+  }
+
+  /** 색·굵기를 바꾸면 새 설정으로 다시 붙이고 기존 획은 그대로 살린다. */
+  function rebuildSignaturePad() {
+    if (!sigPad) return;
+    var data = sigPad.toData();
+    sigPad = null;
+    var fresh = mountSignaturePad();
+    if (fresh && data && data.length) {
+      try { fresh.fromData(data, { clear: true }); } catch (e) { /* ignore */ }
+      state.pad.strokes = strokesFromPad(data);
+      updatePadHint();
+    }
+  }
+
   function resizePad() {
     var canvas = padCanvas();
     if (!canvas) return;
+    if (signaturePadAvailable()) {
+      if (sigPad) { rebuildSignaturePad(); return; }
+      mountSignaturePad();
+      updatePadHint();
+      return;
+    }
     var rect = canvas.getBoundingClientRect();
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     state.pad.dpr = dpr;
@@ -714,6 +781,7 @@
   function drawPad() {
     var canvas = padCanvas();
     if (!canvas) return;
+    if (sigPad) { updatePadHint(); return; } // signature_pad 가 직접 그린다
     var ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -732,6 +800,7 @@
 
   function bindSignaturePad() {
     var canvas = padCanvas();
+    if (signaturePadAvailable()) { mountSignaturePad(); return; } // 입력은 signature_pad 가 맡는다
     canvas.addEventListener('pointerdown', function (ev) {
       ev.preventDefault();
       canvas.setPointerCapture(ev.pointerId);
@@ -790,6 +859,7 @@
   function clearPad() {
     state.pad.strokes = [];
     state.pad.drawing = null;
+    if (sigPad) { sigPad.clear(); updatePadHint(); return; }
     drawPad();
   }
 
@@ -1370,10 +1440,23 @@
       btn.addEventListener('click', function () {
         state.pad.color = btn.dataset.color;
         $$('#sig-color .seg-btn').forEach(function (b) { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+        rebuildSignaturePad();
       });
     });
-    $('#sig-width').addEventListener('input', function (ev) { state.pad.width = parseFloat(ev.target.value); });
+    $('#sig-width').addEventListener('input', function (ev) {
+      state.pad.width = parseFloat(ev.target.value);
+      rebuildSignaturePad();
+    });
     $('#btn-sig-undo').addEventListener('click', function () {
+      if (sigPad) {
+        var data = sigPad.toData();
+        if (!data.length) return;
+        data.pop();
+        try { sigPad.fromData(data, { clear: true }); } catch (e) { sigPad.clear(); }
+        state.pad.strokes = strokesFromPad(data);
+        updatePadHint();
+        return;
+      }
       if (!state.pad.strokes.length) return;
       state.pad.strokes.pop();
       drawPad();
