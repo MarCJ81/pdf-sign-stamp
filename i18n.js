@@ -49,6 +49,24 @@
     if (root.console && console.warn) console.warn('I18N_MISS: ' + text);
   }
 
+  /* Pattern with capture translation: captures that still hold Korean are looked up too. */
+  function applyPattern(core, p) {
+    if (!p[0].test(core)) return null;
+    var m = p[0].exec(core);
+    var caps = [], i, ok = true;
+    for (i = 1; i < m.length; i++) {
+      var c = m[i];
+      if (c == null) { caps[i] = ''; continue; }
+      if (HANGUL.test(c)) {
+        var t = lookupSmall(c.trim());
+        if (t == null) { ok = false; caps[i] = c; } else { caps[i] = t; }
+      } else { caps[i] = c; }
+    }
+    var out = p[1].replace(/\$(\d+)/g, function (all, n) { return caps[+n] != null ? caps[+n] : all; });
+    if (!ok || HANGUL.test(out)) return null;
+    return out;
+  }
+
   function tr(raw) {
     if (typeof raw !== 'string' || !HANGUL.test(raw)) return raw;
     var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(raw);
@@ -75,18 +93,13 @@
       if (th == null && /^\{0\}$/.test(tpl.trim())) th = '{0}';
       if (th != null) return lead + putMoney(th, money.map) + tail;
       for (var mi = 0; mi < PATTERNS.length; mi++) {
-        if (PATTERNS[mi][0].test(tpl)) {
-          var mo = tpl.replace(PATTERNS[mi][0], PATTERNS[mi][1]);
-          if (!HANGUL.test(mo)) return lead + putMoney(mo, money.map) + tail;
-        }
+        var mo = applyPattern(tpl, PATTERNS[mi]);
+        if (mo != null) return lead + putMoney(mo, money.map) + tail;
       }
     }
     for (var i = 0; i < PATTERNS.length; i++) {
-      var p = PATTERNS[i];
-      if (p[0].test(core)) {
-        var out = core.replace(p[0], p[1]);
-        if (!HANGUL.test(out)) return lead + out + tail;
-      }
+      var pout = applyPattern(core, PATTERNS[i]);
+      if (pout != null) return lead + pout + tail;
     }
     var seg = trSegments(core);
     if (seg != null) return lead + seg + tail;
@@ -119,11 +132,8 @@
     var hit = DICT[unit];
     if (hit != null) return hit;
     for (var i = 0; i < PATTERNS.length; i++) {
-      var p = PATTERNS[i];
-      if (p[0].test(unit)) {
-        var out = unit.replace(p[0], p[1]);
-        if (!HANGUL.test(out)) return out;
-      }
+      var pout = applyPattern(unit, PATTERNS[i]);
+      if (pout != null) return pout;
     }
     return null;
   }
@@ -145,8 +155,9 @@
       var out = [];
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i];
+        if (!line.trim()) { out.push(line); continue; }
         var t = line.indexOf('|') > -1 ? trPipe(line) : lookupSmall(line.trim());
-        if (t == null) return null;
+        if (t == null) { if (root.__I18N_DEBUG) (root.__I18N_SEGFAIL = root.__I18N_SEGFAIL || []).push(line); return null; }
         out.push(t);
       }
       return out.join('\n');
@@ -268,9 +279,24 @@
   }
 
   /* ---------- apply / restore ---------- */
+  function trFieldValues() {
+    var list = doc.querySelectorAll('input, textarea');
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      var ty = (el.type || 'text').toLowerCase();
+      if (ty === 'checkbox' || ty === 'radio' || ty === 'hidden' || ty === 'file' || ty === 'date' || ty === 'number') continue;
+      if (el === doc.activeElement) continue;
+      var v = el.value;
+      if (!v || !HANGUL.test(v)) continue;
+      var out = tr(v);
+      if (out !== v) { records.push({ e: el, a: 'prop:value', v: v }); el.value = out; }
+    }
+  }
+
   function applyEn() {
     var title = root.__onetapTitle || (root.__onetapTitle = doc.title);
     walk(doc.body);
+    trFieldValues();
     trMeta();
     trJsonLd();
     doc.documentElement.lang = 'en';
@@ -283,7 +309,7 @@
       var r = records[i];
       if (r.n) { if (r.n.nodeValue !== r.v) r.n.nodeValue = r.v; }
       else if (r.e) {
-        if (r.a === 'value') { if (r.e.value !== r.v) r.e.value = r.v; }
+        if (r.a === 'value' || r.a === 'prop:value') { if (r.e.value !== r.v) r.e.value = r.v; }
         else if (r.e.getAttribute(r.a) !== r.v) r.e.setAttribute(r.a, r.v);
       }
     }
