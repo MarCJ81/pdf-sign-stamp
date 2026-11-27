@@ -1103,3 +1103,14 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
 .tpl-summary:empty { display: none; }
 .stage.tool-text #page-canvas { cursor: crosshair; }
 .el-text-holder { cursor: move; }
+
+/* --- i18n: keep the header on one line at narrow widths --- */
+@media (max-width: 620px) {
+  .topbar { min-width: 0; }
+  .topbar .brand { min-width: 0; flex: 0 1 auto; overflow: hidden; }
+  .topbar .brand-text { min-width: 0; overflow: hidden; }
+  .topbar .brand-text strong {
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar .top-actions { flex: 0 0 auto; }
+}
